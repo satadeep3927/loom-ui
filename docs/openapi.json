@@ -1,0 +1,2575 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Loom Workflow Dashboard",
+    "description": "\n    ## Loom Workflow Orchestration API\n\n    **Loom** is a Python-based durable workflow orchestration engine inspired by Temporal and Durable Task Framework.\n    This API provides comprehensive monitoring and management capabilities for workflows, tasks, events, and logs.\n\n    ### Key Features\n    - **Event-sourced workflows** with automatic recovery and replay\n    - **Deterministic execution** with state reconstruction from events\n    - **Real-time monitoring** via Server-Sent Events (SSE)\n    - **Comprehensive pagination** and filtering across all endpoints\n    - **Task queue management** with retry policies and timeouts\n\n    ### API Structure\n    - **Workflows**: Manage workflow lifecycle and state\n    - **Tasks**: Monitor task execution and queue status\n    - **Events**: Audit trail with real-time streaming\n    - **Logs**: Application logging with structured output\n    - **Statistics**: System metrics and performance data\n\n    ### Authentication\n    Currently no authentication required (development mode).\n    Production deployments should implement appropriate security measures.\n\n    ### Real-time Updates\n    Use Server-Sent Events endpoints (`/stream/*`) for real-time monitoring.\n    These endpoints return `text/event-stream` with JSON payloads.\n\n    ### Rate Limiting\n    No rate limiting currently implemented.\n    Consider implementing in production environments.\n    ",
+    "contact": {
+      "name": "Loom Development Team",
+      "url": "https://github.com/yourusername/loom"
+    },
+    "license": { "name": "MIT", "url": "https://opensource.org/licenses/MIT" },
+    "version": "0.2.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8000", "description": "Development server" },
+    {
+      "url": "https://your-production-domain.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/workflows/": {
+      "get": {
+        "tags": ["Workflows"],
+        "summary": "List workflows",
+        "description": "Retrieve a paginated list of workflows with optional filtering and sorting.\n\n    **Filtering Options:**\n    - `status`: Filter by workflow execution status\n    - `name`: Filter by workflow name (partial match, case-insensitive)\n\n    **Sorting Options:**\n    - `sort_by`: Field to sort by (created_at, updated_at, name, status)\n    - `sort_order`: Sort direction (asc/desc)\n\n    **Pagination:**\n    - `page`: Page number (1-based)\n    - `per_page`: Items per page (1-1000, default 50)\n\n    **Response includes:**\n    - List of workflow summaries for the requested page\n    - Pagination metadata (total count, page info, etc.)",
+        "operationId": "list_workflows_api_workflows__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 50,
+              "title": "Per Page"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/WorkflowStatus" },
+                { "type": "null" }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_WorkflowSummary_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/{workflow_id}": {
+      "get": {
+        "tags": ["Workflows"],
+        "summary": "Get workflow details",
+        "description": "Retrieve complete information for a specific workflow.\n\n    **Returns:**\n    - Complete workflow metadata (name, version, module, etc.)\n    - Current execution status and timing information\n    - Workflow input data and current state\n    - Event count and computed statistics\n\n    **Computed Fields:**\n    - `duration`: Execution time in seconds (for completed workflows)\n    - `event_count`: Total number of events generated\n    - `current_state`: Reconstructed workflow state from events",
+        "operationId": "get_workflow_api_workflows__workflow_id__get",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Workflow Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkflowDetail" }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/{workflow_id}/events": {
+      "get": {
+        "tags": ["Workflows"],
+        "summary": "Get workflow events",
+        "description": "Retrieve paginated events for a specific workflow in chronological order.\n\n    **Filtering Options:**\n    - `type`: Filter by event type\n    - `since`: Filter events after specified timestamp\n\n    **Sorting:**\n    - Events are sorted by ID (creation order) by default\n    - Use `sort_order=asc` for chronological order, `desc` for reverse\n\n    **Use Cases:**\n    - Debug workflow execution flow\n    - Audit trail and compliance\n    - Understanding state changes over time",
+        "operationId": "get_workflow_events_api_workflows__workflow_id__events_get",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Workflow Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Per Page"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/EventType" },
+                { "type": "null" }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "id", "title": "Sort By" }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_EventSummary_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/{workflow_id}/logs": {
+      "get": {
+        "tags": ["Workflows"],
+        "summary": "Get workflow logs",
+        "description": "Retrieve paginated log entries for a specific workflow.\n\n    **Filtering Options:**\n    - `level`: Filter by log level (DEBUG, INFO, WARNING, ERROR)\n    - `since`: Filter logs after specified timestamp\n\n    **Use Cases:**\n    - Debug workflow execution issues\n    - Monitor workflow progress and state changes\n    - Troubleshoot failed workflows",
+        "operationId": "get_workflow_logs_api_workflows__workflow_id__logs_get",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Workflow Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Per Page"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/LogLevel" },
+                { "type": "null" }
+              ],
+              "title": "Level"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_LogEntry_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/{workflow_id}/events/stream": {
+      "get": {
+        "tags": ["Workflows"],
+        "summary": "Stream workflow events (SSE)",
+        "description": "**Server-Sent Events stream for real-time workflow updates.**\n\n    This endpoint provides a persistent connection that streams new events\n    as they occur for the specified workflow.\n\n    **Stream Format:**\n    ```\n    data: {\"id\": 123, \"type\": \"STEP_START\", \"payload\": {...}, \"created_at\": \"...\"}\n\n    data: {\"id\": 124, \"type\": \"STATE_SET\", \"payload\": {...}, \"created_at\": \"...\"}\n    ```\n\n    **Usage (JavaScript):**\n    ```javascript\n    const eventSource = new EventSource('/api/workflows/abc123/events/stream');\n    eventSource.onmessage = function(event) {\n        const data = JSON.parse(event.data);\n        console.log('New event:', data);\n    };\n    ```\n\n    **Connection Management:**\n    - Auto-reconnects on connection loss\n    - Streams only new events (no historical replay)\n    - Closes automatically when workflow reaches terminal state",
+        "operationId": "stream_workflow_events_api_workflows__workflow_id__events_stream_get",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Workflow Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "404": {
+            "description": "Workflow not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "List tasks",
+        "description": "Retrieve a paginated list of tasks with optional filtering and sorting.\n\n    **Filtering Options:**\n    - `workflow_id`: Filter by parent workflow ID\n    - `status`: Filter by task execution status (PENDING, RUNNING, COMPLETED, FAILED)\n    - `kind`: Filter by task type (STEP, ACTIVITY, TIMER)\n\n    **Sorting Options:**\n    - `sort_by`: Field to sort by (created_at, updated_at, run_at, attempts)\n    - `sort_order`: Sort direction (asc/desc)\n\n    **Pagination:**\n    - `page`: Page number (1-based)\n    - `per_page`: Items per page (1-1000, default 50)\n\n    **Response includes:**\n    - List of task summaries with execution metadata\n    - Retry attempt counts and error information\n    - Pagination metadata",
+        "operationId": "list_tasks_api_tasks__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 50,
+              "title": "Per Page"
+            }
+          },
+          {
+            "name": "workflow_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Workflow Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/TaskStatus" },
+                { "type": "null" }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/TaskKind" },
+                { "type": "null" }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_TaskSummary_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "Get task details",
+        "description": "Retrieve complete information for a specific task.\n\n    **Returns:**\n    - Task execution metadata and current status\n    - Retry attempt information and error details\n    - Parent workflow information\n    - Execution timing and scheduling data\n\n    **Use Cases:**\n    - Debug failed or stuck tasks\n    - Monitor task retry behavior\n    - Understand task execution patterns",
+        "operationId": "get_task_api_tasks__task_id__get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Task Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TaskDetail" }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/pending": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "List pending tasks",
+        "description": "Retrieve tasks that are ready to be executed (status=PENDING, run_at <= now).\n\n    **Optimized endpoint for:**\n    - Task queue monitoring\n    - Worker load balancing\n    - Execution scheduling insights\n\n    **Sorting:**\n    - Default sort by `run_at` ascending (oldest first)\n    - Shows tasks in execution priority order",
+        "operationId": "list_pending_tasks_api_tasks_pending_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 1, "title": "Page" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 50, "title": "Per Page" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_TaskSummary_"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "List events",
+        "description": "Retrieve a paginated list of events across all workflows with optional filtering.\n\n    **Filtering Options:**\n    - `workflow_id`: Filter by specific workflow\n    - `type`: Filter by event type (WORKFLOW_STARTED, STEP_START, etc.)\n    - `since`: Filter events after specified timestamp\n\n    **Sorting Options:**\n    - `sort_by`: Field to sort by (id, created_at)\n    - `sort_order`: Sort direction (asc/desc, default desc for recent-first)\n\n    **Pagination:**\n    - `page`: Page number (1-based)\n    - `per_page`: Items per page (1-1000, default 100)\n\n    **Use Cases:**\n    - System-wide event monitoring\n    - Debugging cross-workflow issues\n    - Audit trail and compliance reporting",
+        "operationId": "list_events_api_events__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Per Page"
+            }
+          },
+          {
+            "name": "workflow_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Workflow Id"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/EventType" },
+                { "type": "null" }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "id", "title": "Sort By" }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_EventDetail_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Get event details",
+        "description": "Retrieve complete information for a specific event.\n\n    **Returns:**\n    - Complete event data including payload\n    - Parent workflow context and status\n    - Event timing information\n\n    **Use Cases:**\n    - Debug specific event handling\n    - Investigate event payload data\n    - Understand event context",
+        "operationId": "get_event_api_events__event_id__get",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Event Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventDetail" }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/stream": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Stream all events (SSE)",
+        "description": "**Server-Sent Events stream for real-time system-wide event monitoring.**\n\n    This endpoint provides a persistent connection that streams new events\n    as they occur across all workflows in the system.\n\n    **Stream Format:**\n    ```\n    data: {\"id\": 123, \"workflow_id\": \"abc\", \"type\": \"STEP_START\", \"payload\": {...}}\n\n    data: {\"id\": 124, \"workflow_id\": \"def\", \"type\": \"WORKFLOW_COMPLETED\", \"payload\": {...}}\n    ```\n\n    **Usage (JavaScript):**\n    ```javascript\n    const eventSource = new EventSource('/api/events/stream');\n    eventSource.onmessage = function(event) {\n        const data = JSON.parse(event.data);\n        console.log('System event:', data);\n    };\n    ```\n\n    **Use Cases:**\n    - Real-time system monitoring dashboard\n    - Live activity feeds\n    - Event-driven UI updates\n    - System health monitoring",
+        "operationId": "stream_all_events_api_events_stream_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs/": {
+      "get": {
+        "tags": ["Logs"],
+        "summary": "List logs",
+        "description": "Retrieve a paginated list of log entries across all workflows with optional filtering.\n\n    **Filtering Options:**\n    - `workflow_id`: Filter by specific workflow\n    - `level`: Filter by log level (DEBUG, INFO, WARNING, ERROR)\n    - `since`: Filter logs after specified timestamp\n\n    **Sorting Options:**\n    - `sort_by`: Field to sort by (created_at, level)\n    - `sort_order`: Sort direction (asc/desc, default desc for recent-first)\n\n    **Pagination:**\n    - `page`: Page number (1-based)\n    - `per_page`: Items per page (1-1000, default 100)\n\n    **Use Cases:**\n    - System-wide log monitoring\n    - Error investigation and troubleshooting\n    - Workflow execution debugging\n    - Log aggregation and analysis",
+        "operationId": "list_logs_api_logs__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Per Page"
+            }
+          },
+          {
+            "name": "workflow_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Workflow Id"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/LogLevel" },
+                { "type": "null" }
+              ],
+              "title": "Level"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_LogEntry_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs/errors": {
+      "get": {
+        "tags": ["Logs"],
+        "summary": "List error logs",
+        "description": "Retrieve error-level log entries across all workflows.\n\n    **Optimized endpoint for:**\n    - Error monitoring and alerting\n    - Troubleshooting failed workflows\n    - System health monitoring\n\n    **Filtering Options:**\n    - `workflow_id`: Filter by specific workflow\n    - `since`: Filter logs after specified timestamp\n\n    **Sorting:**\n    - Default sort by created_at descending (most recent first)\n    - Shows critical errors in chronological order",
+        "operationId": "list_error_logs_api_logs_errors_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 1, "title": "Page" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 100, "title": "Per Page" }
+          },
+          {
+            "name": "workflow_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Workflow Id"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Since"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_LogEntry_"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs/recent": {
+      "get": {
+        "tags": ["Logs"],
+        "summary": "List recent logs",
+        "description": "Retrieve the most recent log entries across all workflows.\n\n    **Optimized endpoint for:**\n    - Real-time log monitoring\n    - Live activity feeds\n    - Recent system activity overview\n\n    **Fixed Parameters:**\n    - Always sorted by created_at descending (newest first)\n    - No filtering (shows all log levels and workflows)\n    - Optimized for quick access to latest activity\n\n    **Response:**\n    - Shows system-wide recent activity\n    - Useful for dashboard \"latest activity\" sections",
+        "operationId": "list_recent_logs_api_logs_recent_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 1, "title": "Page" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 50, "title": "Per Page" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_LogEntry_"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Get system statistics",
+        "description": "Retrieve comprehensive system statistics including workflow and task counts.\n\n    **Returns:**\n    - **Workflow Statistics**: Total, running, completed, failed, and canceled counts\n    - **Task Statistics**: Total, pending, running, completed, and failed counts\n    - **Event Count**: Total number of events across all workflows\n    - **Log Count**: Total number of log entries across all workflows\n\n    **Use Cases:**\n    - System health monitoring dashboard\n    - Capacity planning and resource utilization\n    - Performance metrics and reporting\n    - Overall system status overview",
+        "operationId": "get_system_stats_api_stats__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SystemStats" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/workflows": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Get workflow statistics",
+        "description": "Retrieve workflow execution statistics by status.\n\n    **Returns:**\n    - Total number of workflows\n    - Count by status: RUNNING, COMPLETED, FAILED, CANCELED\n\n    **Use Cases:**\n    - Workflow success/failure rate monitoring\n    - Execution pipeline health checks\n    - Performance trend analysis",
+        "operationId": "get_workflow_stats_api_stats_workflows_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkflowStats" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/tasks": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Get task statistics",
+        "description": "Retrieve task execution statistics by status.\n\n    **Returns:**\n    - Total number of tasks\n    - Count by status: PENDING, RUNNING, COMPLETED, FAILED\n\n    **Use Cases:**\n    - Task queue monitoring and load balancing\n    - Worker capacity planning\n    - Task execution performance analysis",
+        "operationId": "get_task_stats_api_stats_tasks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TaskStats" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/health": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Get system health indicators",
+        "description": "Retrieve key health indicators for system monitoring.\n\n    **Returns:**\n    - Active workflow count (RUNNING status)\n    - Pending task count (ready for execution)\n    - Recent error count (last hour)\n    - System status assessment\n\n    **Health Assessment:**\n    - `healthy`: Normal operation (< 10% failed workflows)\n    - `degraded`: Some issues (10-25% failed workflows)\n    - `unhealthy`: Major issues (> 25% failed workflows)\n\n    **Use Cases:**\n    - Health check endpoints for monitoring systems\n    - Dashboard status indicators\n    - Alerting system integration",
+        "operationId": "get_health_indicators_api_stats_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/workflow/{workflow_id}/definition": {
+      "get": {
+        "tags": ["Graphs"],
+        "summary": "Get workflow definition graph",
+        "description": "Generate a static workflow definition graph showing the structure of steps, \n    activities, timers, and state dependencies as defined in the workflow code.\n    \n    This is similar to Airflow's DAG view - it shows the workflow structure \n    based on code analysis, not runtime execution.\n    \n    **Features:**\n    - Step sequence and dependencies\n    - Activity calls within each step  \n    - Timer/sleep operations\n    - State read/write dependencies\n    - Workflow metadata\n    \n    **Node Types:**\n    - `step`: Workflow steps (blue boxes)\n    - `activity`: Activity calls (green circles)\n    - `timer`: Sleep/delay operations (yellow diamonds)\n    - `state`: State variables (red hexagons)\n    \n    **Edge Types:**\n    - `sequence`: Step-to-step flow\n    - `calls`: Step calls activity\n    - `reads`: Reads from state\n    - `writes`: Writes to state\n    - `waits`: Step waits on timer",
+        "operationId": "get_workflow_definition_graph_api_graphs_workflow__workflow_id__definition_get",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Workflow Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowDefinitionGraph"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid workflow definition",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Analysis failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/workflow/{workflow_id}/definition/render": {
+      "get": {
+        "tags": ["Graphs"],
+        "summary": "Render workflow definition graph",
+        "description": "Generate a workflow definition graph in various output formats for visualization.\n    \n    **Supported Formats:**\n    - `json`: Structured JSON data (same as /definition endpoint)\n    - `mermaid`: Mermaid diagram syntax for rendering\n    - `dot`: GraphViz DOT format for advanced visualization\n    \n    **Usage Examples:**\n    - Use `mermaid` format to render in web UIs or documentation\n    - Use `dot` format for GraphViz tools (dot, neato, fdp, etc.)\n    - Use `json` format for custom visualization libraries\n    \n    **Mermaid Example:**\n    ```\n    graph TD\n        step_process[\"Process Order\"]\n        activity_payment(\"process_payment\")\n        state_paid{state.payment_confirmed}\n        step_process --> activity_payment\n        step_process --> state_paid\n    ```",
+        "operationId": "render_workflow_definition_graph_api_graphs_workflow__workflow_id__definition_render_get",
+        "parameters": [
+          {
+            "name": "workflow_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Workflow Id" }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GraphFormatEnum",
+              "description": "Output format for the graph",
+              "default": "mermaid"
+            },
+            "description": "Output format for the graph"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GraphResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid format or workflow",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Rendering failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/workflows/": {
+      "get": {
+        "tags": ["Graphs"],
+        "summary": "List workflows for graph generation",
+        "description": "Get a list of all workflows in the database that can be analyzed for graphs.\n    \n    Returns workflow IDs, names, versions, and basic metadata for each workflow.\n    Use the workflow ID with the graph endpoints to generate visualizations.",
+        "operationId": "list_workflows_for_graphs_api_graphs_workflows__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Workflows For Graphs Api Graphs Workflows  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Health check endpoint",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          }
+        }
+      }
+    },
+    "/health/detailed": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Detailed Health Check",
+        "description": "Comprehensive health check including database connectivity and system status.\n\n    **Checks performed:**\n    - Database connection and schema validation\n    - Memory usage and performance metrics\n    - Active workflow and task counts",
+        "operationId": "detailed_health_check_health_detailed_get",
+        "responses": {
+          "200": {
+            "description": "Detailed system health information",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "status": "healthy",
+                  "timestamp": "2026-01-29T10:30:00Z",
+                  "database": { "status": "connected", "response_time_ms": 12 },
+                  "workflows": { "total": 150, "active": 23 },
+                  "tasks": { "pending": 5, "running": 2 }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "System unhealthy",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "unhealthy",
+                  "timestamp": "2026-01-29T10:30:00Z",
+                  "errors": ["Database connection failed"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Error type/code",
+            "examples": [
+              "VALIDATION_ERROR",
+              "NOT_FOUND",
+              "INTERNAL_ERROR",
+              "BAD_REQUEST"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Human-readable error message",
+            "examples": [
+              "Workflow not found",
+              "Invalid page parameter: must be >= 1",
+              "Database connection failed",
+              "Invalid sort field: 'invalid_field'"
+            ]
+          },
+          "details": {
+            "anyOf": [
+              { "additionalProperties": true, "type": "object" },
+              { "type": "null" }
+            ],
+            "title": "Details",
+            "description": "Additional error details and context",
+            "examples": [
+              {
+                "available_fields": ["created_at", "updated_at", "name"],
+                "workflow_id": "wf_123"
+              },
+              { "field": "per_page", "max_value": 1000, "provided": 1500 }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["error", "message"],
+        "title": "ErrorResponse",
+        "description": "Standard error response",
+        "examples": [
+          {
+            "details": {
+              "resource": "workflow",
+              "workflow_id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0"
+            },
+            "error": "NOT_FOUND",
+            "message": "Workflow 'wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0' not found"
+          },
+          {
+            "details": {
+              "field": "per_page",
+              "max_value": 1000,
+              "provided": 1500
+            },
+            "error": "VALIDATION_ERROR",
+            "message": "Invalid pagination parameters"
+          }
+        ]
+      },
+      "EventDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique event identifier (sequence number)"
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id",
+            "description": "Parent workflow ID"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventType",
+            "description": "Event type"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload",
+            "description": "Event data (JSON)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When event was created"
+          },
+          "workflow_name": {
+            "type": "string",
+            "title": "Workflow Name",
+            "description": "Parent workflow name"
+          },
+          "workflow_status": {
+            "$ref": "#/components/schemas/WorkflowStatus",
+            "description": "Workflow status when event occurred"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workflow_id",
+          "type",
+          "payload",
+          "created_at",
+          "workflow_name",
+          "workflow_status"
+        ],
+        "title": "EventDetail",
+        "description": "Complete event information (extends EventSummary)"
+      },
+      "EventSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique event identifier (sequence number)"
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id",
+            "description": "Parent workflow ID"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventType",
+            "description": "Event type"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload",
+            "description": "Event data (JSON)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When event was created"
+          }
+        },
+        "type": "object",
+        "required": ["id", "workflow_id", "type", "payload", "created_at"],
+        "title": "EventSummary",
+        "description": "Event summary for list views"
+      },
+      "EventType": {
+        "type": "string",
+        "enum": [
+          "WORKFLOW_STARTED",
+          "WORKFLOW_COMPLETED",
+          "WORKFLOW_FAILED",
+          "WORKFLOW_CANCELLED",
+          "STEP_START",
+          "STEP_END",
+          "STATE_SET",
+          "STATE_UPDATE",
+          "ACTIVITY_SCHEDULED",
+          "ACTIVITY_COMPLETED",
+          "ACTIVITY_FAILED",
+          "TIMER_SCHEDULED",
+          "TIMER_FIRED",
+          "SIGNAL_RECEIVED"
+        ],
+        "title": "EventType",
+        "description": "Workflow event types"
+      },
+      "GraphEdge": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From",
+            "description": "Source node ID",
+            "examples": ["step_validate_input", "state_user_data"]
+          },
+          "to": {
+            "type": "string",
+            "title": "To",
+            "description": "Target node ID",
+            "examples": ["step_process_payment", "activity_send_notification"]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Type of relationship",
+            "examples": ["sequence", "calls", "reads", "writes", "waits"]
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Display label for the edge",
+            "default": "",
+            "examples": ["then", "executes", "reads", "updates", "pauses for"]
+          }
+        },
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "title": "GraphEdge",
+        "description": "Represents an edge (connection) in the workflow definition graph."
+      },
+      "GraphFormatEnum": {
+        "type": "string",
+        "enum": ["json", "mermaid", "dot"],
+        "title": "GraphFormatEnum",
+        "description": "Supported graph output formats"
+      },
+      "GraphNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the node",
+            "examples": [
+              "step_process_payment",
+              "activity_send_email",
+              "state_user_id"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Type of the node",
+            "examples": ["step", "activity", "timer", "state"]
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Display label for the node",
+            "examples": [
+              "Process Payment",
+              "send_email",
+              "Sleep 5s",
+              "state.user_id"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Additional metadata about the node",
+            "examples": [
+              {
+                "description": "Processes user payment",
+                "function": "process_payment_step"
+              },
+              { "retry_count": 3, "timeout_seconds": 30 },
+              { "key": "user_id", "type": "string" }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["id", "type", "label"],
+        "title": "GraphNode",
+        "description": "Represents a node in the workflow definition graph."
+      },
+      "GraphResponse": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "description": "Format of the generated graph",
+            "examples": ["mermaid", "dot", "json"]
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Generated graph content in the specified format"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Additional metadata about the graph generation"
+          }
+        },
+        "type": "object",
+        "required": ["format", "content"],
+        "title": "GraphResponse",
+        "description": "Response containing the generated graph."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": { "$ref": "#/components/schemas/ValidationError" },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LogEntry": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique log entry identifier"
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id",
+            "description": "Parent workflow ID"
+          },
+          "workflow_name": {
+            "type": "string",
+            "title": "Workflow Name",
+            "description": "Parent workflow name"
+          },
+          "level": {
+            "$ref": "#/components/schemas/LogLevel",
+            "description": "Log severity level"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Log message content"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When log entry was created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workflow_id",
+          "workflow_name",
+          "level",
+          "message",
+          "created_at"
+        ],
+        "title": "LogEntry",
+        "description": "Workflow log entry"
+      },
+      "LogLevel": {
+        "type": "string",
+        "enum": ["DEBUG", "INFO", "WARNING", "ERROR"],
+        "title": "LogLevel",
+        "description": "Log severity levels"
+      },
+      "PaginatedResponse_EventDetail_": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/EventDetail" },
+            "type": "array",
+            "title": "Data",
+            "description": "List of items for current page"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "PaginatedResponse[EventDetail]"
+      },
+      "PaginatedResponse_EventSummary_": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/EventSummary" },
+            "type": "array",
+            "title": "Data",
+            "description": "List of items for current page"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "PaginatedResponse[EventSummary]"
+      },
+      "PaginatedResponse_LogEntry_": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/LogEntry" },
+            "type": "array",
+            "title": "Data",
+            "description": "List of items for current page"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "PaginatedResponse[LogEntry]"
+      },
+      "PaginatedResponse_TaskSummary_": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/TaskSummary" },
+            "type": "array",
+            "title": "Data",
+            "description": "List of items for current page"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "PaginatedResponse[TaskSummary]"
+      },
+      "PaginatedResponse_WorkflowSummary_": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/WorkflowSummary" },
+            "type": "array",
+            "title": "Data",
+            "description": "List of items for current page"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "PaginatedResponse[WorkflowSummary]"
+      },
+      "PaginationMeta": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "per_page": {
+            "type": "integer",
+            "title": "Per Page",
+            "description": "Items per page"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items"
+          },
+          "pages": {
+            "type": "integer",
+            "title": "Pages",
+            "description": "Total number of pages"
+          },
+          "has_prev": {
+            "type": "boolean",
+            "title": "Has Prev",
+            "description": "True if there is a previous page"
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next",
+            "description": "True if there is a next page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "per_page",
+          "total",
+          "pages",
+          "has_prev",
+          "has_next"
+        ],
+        "title": "PaginationMeta",
+        "description": "Pagination metadata for list responses"
+      },
+      "SystemStats": {
+        "properties": {
+          "workflows": {
+            "$ref": "#/components/schemas/WorkflowStats",
+            "description": "Workflow statistics"
+          },
+          "tasks": {
+            "$ref": "#/components/schemas/TaskStats",
+            "description": "Task statistics"
+          },
+          "events": {
+            "type": "integer",
+            "title": "Events",
+            "description": "Total number of events"
+          },
+          "logs": {
+            "type": "integer",
+            "title": "Logs",
+            "description": "Total number of log entries"
+          }
+        },
+        "type": "object",
+        "required": ["workflows", "tasks", "events", "logs"],
+        "title": "SystemStats",
+        "description": "Overall system statistics"
+      },
+      "TaskDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique task identifier",
+            "examples": ["task_01HQK8XA1B2C3D4E5F6G7H8I9J"]
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id",
+            "description": "Parent workflow ID",
+            "examples": ["wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0"]
+          },
+          "workflow_name": {
+            "type": "string",
+            "title": "Workflow Name",
+            "description": "Parent workflow name",
+            "examples": ["UserRegistrationWorkflow"]
+          },
+          "kind": { "$ref": "#/components/schemas/TaskKind" },
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "description": "Task target (step name, activity name, etc.)",
+            "examples": [
+              "send_welcome_email",
+              "UserRegistration.verify_email",
+              "payment_timeout"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus",
+            "description": "Current task status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "description": "Number of execution attempts",
+            "examples": [1, 2, 3]
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts",
+            "description": "Maximum allowed attempts",
+            "examples": [3, 5, 10]
+          },
+          "run_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Run At",
+            "description": "When task should/did run (ISO 8601 format)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When task was created (ISO 8601 format)"
+          },
+          "updated_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Updated At",
+            "description": "When task was last updated (ISO 8601 format)"
+          },
+          "last_error": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Last Error",
+            "description": "Last error message (if failed)",
+            "examples": [
+              "SMTP connection failed: Unable to connect to mail server",
+              "HTTP 429: Rate limit exceeded",
+              "Database connection timeout after 30s"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workflow_id",
+          "workflow_name",
+          "kind",
+          "target",
+          "status",
+          "attempts",
+          "max_attempts",
+          "run_at",
+          "created_at"
+        ],
+        "title": "TaskDetail",
+        "description": "Complete task information (extends TaskSummary)",
+        "examples": [
+          {
+            "attempts": 1,
+            "created_at": "2026-01-29T10:15:30Z",
+            "id": "task_01HQK8XA1B2C3D4E5F6G7H8I9J",
+            "kind": "ACTIVITY",
+            "max_attempts": 3,
+            "run_at": "2026-01-29T10:16:00Z",
+            "status": "COMPLETED",
+            "target": "send_welcome_email",
+            "updated_at": "2026-01-29T10:16:15Z",
+            "workflow_id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0",
+            "workflow_name": "UserRegistrationWorkflow"
+          },
+          {
+            "attempts": 3,
+            "created_at": "2026-01-29T10:21:00Z",
+            "id": "task_01HQK8XA1B2C3D4E5F6G7H8I9K",
+            "kind": "ACTIVITY",
+            "last_error": "Payment failed: Insufficient funds",
+            "max_attempts": 3,
+            "run_at": "2026-01-29T10:21:30Z",
+            "status": "FAILED",
+            "target": "charge_payment",
+            "updated_at": "2026-01-29T10:23:45Z",
+            "workflow_id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F1",
+            "workflow_name": "OrderProcessingWorkflow"
+          }
+        ]
+      },
+      "TaskKind": {
+        "type": "string",
+        "enum": ["STEP", "ACTIVITY", "TIMER"],
+        "title": "TaskKind",
+        "description": "Task type/kind"
+      },
+      "TaskStats": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of tasks"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Number of pending tasks"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running",
+            "description": "Number of running tasks"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed",
+            "description": "Number of completed tasks"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "description": "Number of failed tasks"
+          }
+        },
+        "type": "object",
+        "required": ["total", "pending", "running", "completed", "failed"],
+        "title": "TaskStats",
+        "description": "Task execution statistics"
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED"],
+        "title": "TaskStatus",
+        "description": "Task execution status"
+      },
+      "TaskSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique task identifier",
+            "examples": ["task_01HQK8XA1B2C3D4E5F6G7H8I9J"]
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id",
+            "description": "Parent workflow ID",
+            "examples": ["wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0"]
+          },
+          "workflow_name": {
+            "type": "string",
+            "title": "Workflow Name",
+            "description": "Parent workflow name",
+            "examples": ["UserRegistrationWorkflow"]
+          },
+          "kind": { "$ref": "#/components/schemas/TaskKind" },
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "description": "Task target (step name, activity name, etc.)",
+            "examples": [
+              "send_welcome_email",
+              "UserRegistration.verify_email",
+              "payment_timeout"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus",
+            "description": "Current task status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "description": "Number of execution attempts",
+            "examples": [1, 2, 3]
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts",
+            "description": "Maximum allowed attempts",
+            "examples": [3, 5, 10]
+          },
+          "run_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Run At",
+            "description": "When task should/did run (ISO 8601 format)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When task was created (ISO 8601 format)"
+          },
+          "updated_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Updated At",
+            "description": "When task was last updated (ISO 8601 format)"
+          },
+          "last_error": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Last Error",
+            "description": "Last error message (if failed)",
+            "examples": [
+              "SMTP connection failed: Unable to connect to mail server",
+              "HTTP 429: Rate limit exceeded",
+              "Database connection timeout after 30s"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workflow_id",
+          "workflow_name",
+          "kind",
+          "target",
+          "status",
+          "attempts",
+          "max_attempts",
+          "run_at",
+          "created_at"
+        ],
+        "title": "TaskSummary",
+        "description": "Task summary for list views",
+        "examples": [
+          {
+            "attempts": 1,
+            "created_at": "2026-01-29T10:15:30Z",
+            "id": "task_01HQK8XA1B2C3D4E5F6G7H8I9J",
+            "kind": "ACTIVITY",
+            "max_attempts": 3,
+            "run_at": "2026-01-29T10:16:00Z",
+            "status": "COMPLETED",
+            "target": "send_welcome_email",
+            "updated_at": "2026-01-29T10:16:15Z",
+            "workflow_id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0",
+            "workflow_name": "UserRegistrationWorkflow"
+          },
+          {
+            "attempts": 3,
+            "created_at": "2026-01-29T10:21:00Z",
+            "id": "task_01HQK8XA1B2C3D4E5F6G7H8I9K",
+            "kind": "ACTIVITY",
+            "last_error": "Payment failed: Insufficient funds",
+            "max_attempts": 3,
+            "run_at": "2026-01-29T10:21:30Z",
+            "status": "FAILED",
+            "target": "charge_payment",
+            "updated_at": "2026-01-29T10:23:45Z",
+            "workflow_id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F1",
+            "workflow_name": "OrderProcessingWorkflow"
+          }
+        ]
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": { "type": "string", "title": "Message" },
+          "type": { "type": "string", "title": "Error Type" }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      },
+      "WorkflowDefinitionGraph": {
+        "properties": {
+          "nodes": {
+            "items": { "$ref": "#/components/schemas/GraphNode" },
+            "type": "array",
+            "title": "Nodes",
+            "description": "List of nodes in the graph"
+          },
+          "edges": {
+            "items": { "$ref": "#/components/schemas/GraphEdge" },
+            "type": "array",
+            "title": "Edges",
+            "description": "List of edges connecting the nodes"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Workflow-level metadata",
+            "examples": [
+              {
+                "workflow_description": "Processes customer orders with payment and shipping",
+                "workflow_name": "OrderProcessingWorkflow",
+                "workflow_version": "1.2.0"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["nodes", "edges"],
+        "title": "WorkflowDefinitionGraph",
+        "description": "Complete workflow definition graph structure.",
+        "examples": [
+          {
+            "edges": [
+              {
+                "from": "step_validate_order",
+                "label": "executes",
+                "to": "activity_check_inventory",
+                "type": "calls"
+              },
+              {
+                "from": "step_validate_order",
+                "label": "updates",
+                "to": "state_order_valid",
+                "type": "writes"
+              }
+            ],
+            "metadata": {
+              "workflow_description": "Handles order processing with validation and payment",
+              "workflow_name": "OrderProcessingWorkflow",
+              "workflow_version": "1.0.0"
+            },
+            "nodes": [
+              {
+                "id": "step_validate_order",
+                "label": "Validate Order",
+                "metadata": {
+                  "description": "Validates order data and inventory",
+                  "function": "validate_order_step"
+                },
+                "type": "step"
+              },
+              {
+                "id": "activity_check_inventory",
+                "label": "check_inventory",
+                "metadata": {
+                  "called_from_step": "validate_order",
+                  "retry_count": 3
+                },
+                "type": "activity"
+              },
+              {
+                "id": "state_order_valid",
+                "label": "state.order_valid",
+                "metadata": { "key": "order_valid" },
+                "type": "state"
+              }
+            ]
+          }
+        ]
+      },
+      "WorkflowDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique workflow identifier",
+            "examples": ["wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0"]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Workflow name/type",
+            "examples": ["UserRegistrationWorkflow"]
+          },
+          "description": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Description",
+            "description": "Workflow description",
+            "examples": [
+              "Handles new user registration with email verification and profile setup"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "Workflow version",
+            "examples": ["1.0.0", "2.1.3", "1.0.0-beta.1"]
+          },
+          "module": {
+            "type": "string",
+            "title": "Module",
+            "description": "Python module containing workflow",
+            "examples": [
+              "workflows.user_registration",
+              "workflows.order_processing"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkflowStatus",
+            "description": "Current execution status"
+          },
+          "input": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input",
+            "description": "Workflow input data (JSON)",
+            "examples": [
+              {
+                "email": "user@example.com",
+                "plan": "premium",
+                "user_id": 12345
+              },
+              {
+                "items": [{ "id": "item_1", "quantity": 2 }],
+                "order_id": "ord_123"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When workflow was created (ISO 8601 format)"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "When workflow was last updated (ISO 8601 format)"
+          },
+          "duration": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Duration",
+            "description": "Execution duration in seconds",
+            "examples": [150, 3600, null]
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count",
+            "description": "Total number of events",
+            "examples": [12, 45, 3]
+          },
+          "current_state": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Current State",
+            "description": "Current workflow state reconstructed from events",
+            "examples": [
+              {
+                "profile_created": false,
+                "step": "email_verification",
+                "verified": true
+              },
+              { "inventory_reserved": true, "order_status": "payment_pending" }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "module",
+          "status",
+          "input",
+          "created_at",
+          "updated_at",
+          "event_count"
+        ],
+        "title": "WorkflowDetail",
+        "description": "Complete workflow information",
+        "examples": [
+          {
+            "created_at": "2026-01-29T10:15:00Z",
+            "current_state": {
+              "email_verified": true,
+              "profile_created": true,
+              "welcome_email_sent": true
+            },
+            "description": "Handles new user registration with email verification",
+            "duration": 150,
+            "event_count": 12,
+            "id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0",
+            "input": {
+              "email": "user@example.com",
+              "plan": "premium",
+              "user_id": 12345
+            },
+            "module": "workflows.user_registration",
+            "name": "UserRegistrationWorkflow",
+            "status": "COMPLETED",
+            "updated_at": "2026-01-29T10:17:30Z",
+            "version": "1.0.0"
+          }
+        ]
+      },
+      "WorkflowStats": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of workflows"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running",
+            "description": "Number of running workflows"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed",
+            "description": "Number of completed workflows"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "description": "Number of failed workflows"
+          },
+          "canceled": {
+            "type": "integer",
+            "title": "Canceled",
+            "description": "Number of canceled workflows"
+          }
+        },
+        "type": "object",
+        "required": ["total", "running", "completed", "failed", "canceled"],
+        "title": "WorkflowStats",
+        "description": "Workflow execution statistics"
+      },
+      "WorkflowStatus": {
+        "type": "string",
+        "enum": ["RUNNING", "COMPLETED", "FAILED", "CANCELED"],
+        "title": "WorkflowStatus",
+        "description": "Workflow execution status"
+      },
+      "WorkflowSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique workflow identifier",
+            "examples": ["wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0"]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Workflow name/type",
+            "examples": [
+              "UserRegistrationWorkflow",
+              "OrderProcessingWorkflow",
+              "DataPipelineWorkflow"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkflowStatus",
+            "description": "Current execution status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When workflow was created (ISO 8601 format)"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "When workflow was last updated (ISO 8601 format)"
+          },
+          "duration": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Duration",
+            "description": "Execution duration in seconds (if completed)",
+            "examples": [120, 1800, 45]
+          }
+        },
+        "type": "object",
+        "required": ["id", "name", "status", "created_at", "updated_at"],
+        "title": "WorkflowSummary",
+        "description": "Workflow summary for list views",
+        "examples": [
+          {
+            "created_at": "2026-01-29T10:15:00Z",
+            "duration": 150,
+            "id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F0",
+            "name": "UserRegistrationWorkflow",
+            "status": "COMPLETED",
+            "updated_at": "2026-01-29T10:17:30Z"
+          },
+          {
+            "created_at": "2026-01-29T10:20:00Z",
+            "id": "wf_01HQK8X9M2Y3Z4A5B6C7D8E9F1",
+            "name": "OrderProcessingWorkflow",
+            "status": "RUNNING",
+            "updated_at": "2026-01-29T10:25:15Z"
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Workflows",
+      "description": "Manage workflow definitions, execution state, and lifecycle operations."
+    },
+    {
+      "name": "Tasks",
+      "description": "Monitor task execution, queue status, and retry policies."
+    },
+    {
+      "name": "Events",
+      "description": "Event sourcing audit trail with real-time streaming capabilities."
+    },
+    {
+      "name": "Logs",
+      "description": "Application logging with structured output and filtering."
+    },
+    {
+      "name": "Statistics",
+      "description": "System metrics, performance data, and analytics."
+    },
+    {
+      "name": "Health",
+      "description": "System health checks and status monitoring."
+    }
+  ]
+}
