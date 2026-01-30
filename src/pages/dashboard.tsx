@@ -1,19 +1,28 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSystemStats, useRecentLogs, useWorkflows } from '@/lib/queries';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, CheckCircle2, XCircle, Clock, Workflow, ListTodo } from 'lucide-react';
-import { LogLevelBadge } from '@/components/status-badge';
-import { formatRelativeTime } from '@/lib/format';
-import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSystemStats, useRecentLogs, useWorkflows } from "@/lib/queries";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Workflow,
+  ListTodo,
+} from "lucide-react";
+import { LogLevelBadge } from "@/components/status-badge";
+import { formatRelativeTime } from "@/lib/format";
+import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 export function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useSystemStats();
-  const { data: recentLogs, isLoading: logsLoading } = useRecentLogs({ per_page: 10 });
+  const { data: recentLogs, isLoading: logsLoading } = useRecentLogs({
+    per_page: 10,
+  });
   const { data: workflows, isLoading: workflowsLoading } = useWorkflows({
     per_page: 5,
-    sort_by: 'updated_at',
-    sort_order: 'desc',
+    sort_by: "updated_at",
+    sort_order: "desc",
   });
 
   if (statsLoading) {
@@ -24,18 +33,24 @@ export function Dashboard() {
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Monitor your workflow orchestration system</p>
+        <p className="text-muted-foreground">
+          Monitor your workflow orchestration system
+        </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Workflows
+            </CardTitle>
             <Workflow className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.workflows.total || 0}</div>
+            <div className="text-2xl font-bold">
+              {stats?.workflows.total || 0}
+            </div>
             <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Activity className="h-3 w-3" />
@@ -77,21 +92,30 @@ export function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">
               {stats?.workflows.total
-                ? ((stats.workflows.completed / stats.workflows.total) * 100).toFixed(1)
+                ? (
+                    (stats.workflows.completed / stats.workflows.total) *
+                    100
+                  ).toFixed(1)
                 : 0}
               %
             </div>
-            <p className="text-xs text-muted-foreground">Workflow completion rate</p>
+            <p className="text-xs text-muted-foreground">
+              Workflow completion rate
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Failed Workflows</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Failed Workflows
+            </CardTitle>
             <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.workflows.failed || 0}</div>
+            <div className="text-2xl font-bold">
+              {stats?.workflows.failed || 0}
+            </div>
             <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
         </Card>
@@ -126,15 +150,17 @@ export function Dashboard() {
                       </p>
                     </div>
                     <Badge
-                      variant={workflow.status === 'COMPLETED' ? 'outline' : 'default'}
+                      variant={
+                        workflow.status === "COMPLETED" ? "outline" : "default"
+                      }
                       className={
-                        workflow.status === 'RUNNING'
-                          ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                          : workflow.status === 'COMPLETED'
-                          ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                          : workflow.status === 'FAILED'
-                          ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                          : ''
+                        workflow.status === "RUNNING"
+                          ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                          : workflow.status === "COMPLETED"
+                            ? "bg-green-500/10 text-green-500 border-green-500/20"
+                            : workflow.status === "FAILED"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : ""
                       }
                     >
                       {workflow.status}
@@ -180,7 +206,9 @@ export function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No logs found</p>
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No logs found
+              </p>
             )}
           </CardContent>
         </Card>

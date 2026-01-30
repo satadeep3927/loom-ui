@@ -9,6 +9,7 @@ Your beautiful LOOM workflow monitoring dashboard is ready to use!
 A fully functional, production-ready monitoring dashboard with:
 
 #### **Technology Stack**
+
 - ✅ React 19 + TypeScript
 - ✅ React Router for navigation
 - ✅ TanStack Query (React Query) for data management
@@ -21,6 +22,7 @@ A fully functional, production-ready monitoring dashboard with:
 - ✅ date-fns for date formatting
 
 #### **Pages & Features**
+
 1. **Dashboard** (`/`)
    - Real-time system statistics
    - Recent workflows and logs
@@ -103,12 +105,15 @@ loom-ui/
 ### 🚀 Running the Dashboard
 
 **Development Server:**
+
 ```bash
 npm run dev
 ```
+
 Access at: **http://localhost:5173**
 
 **Production Build:**
+
 ```bash
 npm run build
 npm run preview
@@ -118,6 +123,7 @@ npm run preview
 
 **API Endpoint:**
 Edit `.env`:
+
 ```env
 VITE_API_URL=http://localhost:8000
 ```
@@ -145,11 +151,13 @@ VITE_API_URL=http://localhost:8000
 ### 🎯 Next Steps
 
 1. **Start LOOM Backend**
+
    ```bash
    # Make sure your LOOM API is running on port 8000
    ```
 
 2. **Open Dashboard**
+
    ```bash
    # Already running at http://localhost:5173
    ```
@@ -169,17 +177,20 @@ VITE_API_URL=http://localhost:8000
 ### 🛠️ Customization
 
 **Add More Components:**
+
 ```bash
 npx shadcn@latest add [component]
 ```
 
 **Available components:**
+
 - alert, avatar, checkbox, command, dropdown-menu, popover, progress, radio-group, sheet, slider, switch, toast, tooltip, and more!
 
 **Modify Theme:**
 Edit `src/index.css` CSS custom properties
 
 **Add New Pages:**
+
 1. Create component in `src/pages/`
 2. Add route in `src/App.tsx`
 3. Add navigation link in `src/components/sidebar.tsx`
@@ -198,6 +209,7 @@ Edit `src/index.css` CSS custom properties
 Your LOOM monitoring dashboard is complete and ready to use!
 
 **Current Status:**
+
 - ✅ All dependencies installed
 - ✅ All pages created
 - ✅ API client configured

@@ -1,43 +1,43 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Enums
 export enum WorkflowStatus {
-  RUNNING = 'RUNNING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  CANCELED = 'CANCELED',
+  RUNNING = "RUNNING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  CANCELED = "CANCELED",
 }
 
 export enum TaskStatus {
-  PENDING = 'PENDING',
-  RUNNING = 'RUNNING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
 }
 
 export enum TaskKind {
-  STEP = 'STEP',
-  ACTIVITY = 'ACTIVITY',
-  TIMER = 'TIMER',
+  STEP = "STEP",
+  ACTIVITY = "ACTIVITY",
+  TIMER = "TIMER",
 }
 
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARNING = 'WARNING',
-  ERROR = 'ERROR',
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARNING = "WARNING",
+  ERROR = "ERROR",
 }
 
 export enum EventType {
-  WORKFLOW_STARTED = 'WORKFLOW_STARTED',
-  WORKFLOW_COMPLETED = 'WORKFLOW_COMPLETED',
-  WORKFLOW_FAILED = 'WORKFLOW_FAILED',
-  STEP_START = 'STEP_START',
-  STEP_COMPLETE = 'STEP_COMPLETE',
-  STEP_FAILED = 'STEP_FAILED',
-  STATE_SET = 'STATE_SET',
-  TIMER_STARTED = 'TIMER_STARTED',
-  TIMER_FIRED = 'TIMER_FIRED',
+  WORKFLOW_STARTED = "WORKFLOW_STARTED",
+  WORKFLOW_COMPLETED = "WORKFLOW_COMPLETED",
+  WORKFLOW_FAILED = "WORKFLOW_FAILED",
+  STEP_START = "STEP_START",
+  STEP_COMPLETE = "STEP_COMPLETE",
+  STEP_FAILED = "STEP_FAILED",
+  STATE_SET = "STATE_SET",
+  TIMER_STARTED = "TIMER_STARTED",
+  TIMER_FIRED = "TIMER_FIRED",
 }
 
 // Zod Schemas
@@ -111,7 +111,9 @@ export const paginationMetaSchema = z.object({
   has_prev: z.boolean(),
 });
 
-export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+export const paginatedResponseSchema = <T extends z.ZodTypeAny>(
+  itemSchema: T,
+) =>
   z.object({
     data: z.array(itemSchema),
     meta: paginationMetaSchema,
@@ -140,17 +142,30 @@ export const systemStatsSchema = z.object({
   logs: z.number(),
 });
 
+export const graphNodeSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  label: z.string(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const graphEdgeSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  type: z.string(),
+  label: z.string().optional(),
+});
+
 export const workflowDiagramSchema = z.object({
-  format: z.string(),
-  content: z.string(),
-  metadata: z.object({
-    workflow_id: z.string(),
-    workflow_name: z.string(),
-    node_count: z.number(),
-    edge_count: z.number(),
-    workflow_version: z.string().optional(),
-    workflow_description: z.string().optional(),
-  }),
+  nodes: z.array(graphNodeSchema),
+  edges: z.array(graphEdgeSchema),
+  metadata: z
+    .object({
+      workflow_name: z.string(),
+      workflow_version: z.string().optional(),
+      workflow_description: z.string().optional(),
+    })
+    .optional(),
 });
 
 // TypeScript Types
@@ -169,4 +184,6 @@ export type PaginatedResponse<T> = {
 export type WorkflowStats = z.infer<typeof workflowStatsSchema>;
 export type TaskStats = z.infer<typeof taskStatsSchema>;
 export type SystemStats = z.infer<typeof systemStatsSchema>;
+export type GraphNode = z.infer<typeof graphNodeSchema>;
+export type GraphEdge = z.infer<typeof graphEdgeSchema>;
 export type WorkflowDiagram = z.infer<typeof workflowDiagramSchema>;

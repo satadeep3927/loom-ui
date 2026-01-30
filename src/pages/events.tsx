@@ -1,33 +1,33 @@
-import { useState } from 'react';
-import { useEvents } from '@/lib/queries';
-import { EventType } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { formatDate, formatRelativeTime } from '@/lib/format';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { useEvents } from "@/lib/queries";
+import { EventType } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { formatDate, formatRelativeTime } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function EventsPage() {
   const [page, setPage] = useState(1);
-  const [eventType, setEventType] = useState<EventType | 'ALL'>('ALL');
+  const [eventType, setEventType] = useState<EventType | "ALL">("ALL");
   const perPage = 20;
 
   const { data, isLoading } = useEvents({
     page,
     per_page: perPage,
-    type: eventType === 'ALL' ? undefined : eventType,
-    sort_by: 'id',
-    sort_order: 'desc',
+    type: eventType === "ALL" ? undefined : eventType,
+    sort_by: "id",
+    sort_order: "desc",
   });
 
   return (
@@ -37,17 +37,28 @@ export function EventsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Events</h1>
           <p className="text-muted-foreground">Event sourcing audit trail</p>
         </div>
-        <Select value={eventType} onValueChange={(value) => setEventType(value as EventType | 'ALL')}>
+        <Select
+          value={eventType}
+          onValueChange={(value) => setEventType(value as EventType | "ALL")}
+        >
           <SelectTrigger className="w-55">
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Types</SelectItem>
-            <SelectItem value={EventType.WORKFLOW_STARTED}>Workflow Started</SelectItem>
-            <SelectItem value={EventType.WORKFLOW_COMPLETED}>Workflow Completed</SelectItem>
-            <SelectItem value={EventType.WORKFLOW_FAILED}>Workflow Failed</SelectItem>
+            <SelectItem value={EventType.WORKFLOW_STARTED}>
+              Workflow Started
+            </SelectItem>
+            <SelectItem value={EventType.WORKFLOW_COMPLETED}>
+              Workflow Completed
+            </SelectItem>
+            <SelectItem value={EventType.WORKFLOW_FAILED}>
+              Workflow Failed
+            </SelectItem>
             <SelectItem value={EventType.STEP_START}>Step Start</SelectItem>
-            <SelectItem value={EventType.STEP_COMPLETE}>Step Complete</SelectItem>
+            <SelectItem value={EventType.STEP_COMPLETE}>
+              Step Complete
+            </SelectItem>
             <SelectItem value={EventType.STEP_FAILED}>Step Failed</SelectItem>
             <SelectItem value={EventType.STATE_SET}>State Set</SelectItem>
           </SelectContent>
@@ -57,7 +68,7 @@ export function EventsPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {data?.meta.total || 0} Event{data?.meta.total !== 1 ? 's' : ''}
+            {data?.meta.total || 0} Event{data?.meta.total !== 1 ? "s" : ""}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -88,16 +99,20 @@ export function EventsPage() {
                             Workflow: {event.workflow_id}
                           </Link>
                         </div>
-                        <div className="text-xs text-muted-foreground">#{event.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          #{event.id}
+                        </div>
                       </div>
                       <div className="text-xs text-muted-foreground mb-2">
-                        {formatDate(event.created_at)} ({formatRelativeTime(event.created_at)})
+                        {formatDate(event.created_at)} (
+                        {formatRelativeTime(event.created_at)})
                       </div>
-                      {event.payload && Object.keys(event.payload).length > 0 && (
-                        <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                          {JSON.stringify(event.payload, null, 2)}
-                        </pre>
-                      )}
+                      {event.payload &&
+                        Object.keys(event.payload).length > 0 && (
+                          <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                            {JSON.stringify(event.payload, null, 2)}
+                          </pre>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -106,7 +121,8 @@ export function EventsPage() {
               {data.meta.pages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Page {data.meta.page} of {data.meta.pages} ({data.meta.total} total)
+                    Page {data.meta.page} of {data.meta.pages} (
+                    {data.meta.total} total)
                   </div>
                   <div className="flex gap-2">
                     <Button

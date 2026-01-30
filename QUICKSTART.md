@@ -35,11 +35,13 @@ Your LOOM monitoring dashboard is now ready! Here's what has been set up:
 ### 🔧 Configuration
 
 The dashboard is configured to connect to:
+
 ```
 API: http://localhost:8000
 ```
 
 To change this, edit the `.env` file:
+
 ```env
 VITE_API_URL=http://your-api-url
 ```
@@ -61,14 +63,17 @@ npm run lint         # Run ESLint
 ### 🎨 Customization
 
 #### Adding More Components
+
 ```bash
 npx shadcn@latest add [component-name]
 ```
 
 #### Theme Colors
+
 Edit `src/index.css` to customize colors. The theme uses CSS custom properties.
 
 #### API Integration
+
 All API calls are in `src/lib/api.ts`. React Query hooks are in `src/lib/queries.ts`.
 
 ### 🌐 Development Server
@@ -115,11 +120,13 @@ src/
 ### 🐛 Troubleshooting
 
 **API Connection Issues?**
+
 - Check that LOOM backend is running
 - Verify `VITE_API_URL` in `.env`
 - Check browser console for CORS errors
 
 **Build Errors?**
+
 - Run `npm install` to ensure all dependencies are installed
 - Clear node_modules and reinstall if needed
 

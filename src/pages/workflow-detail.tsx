@@ -1,15 +1,33 @@
-import { useParams, Link } from 'react-router-dom';
-import { useWorkflow, useWorkflowEvents, useWorkflowLogs, useWorkflowDiagram } from '@/lib/queries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatusBadge, LogLevelBadge } from '@/components/status-badge';
-import { formatDate, formatRelativeTime, formatDuration } from '@/lib/format';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { ChevronLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEffect, useRef, useState } from 'react';
+import { LogLevelBadge, StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate, formatDuration, formatRelativeTime } from "@/lib/format";
+import {
+  useWorkflow,
+  useWorkflowDiagram,
+  useWorkflowEvents,
+  useWorkflowLogs,
+} from "@/lib/queries";
+import type { WorkflowDiagram } from "@/lib/types";
+import {
+  Background,
+  Controls,
+  Edge,
+  MarkerType,
+  MiniMap,
+  Node,
+  Position,
+  ReactFlow,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { ChevronLeft } from "lucide-react";
+import { useMemo } from "react";
+import { Link, useParams } from "react-router-dom";
+import dagre from "dagre";
 
 export function WorkflowDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -57,7 +75,7 @@ export function WorkflowDetailPage() {
           <CardContent>
             <div className="text-2xl font-bold">{workflow.status}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {workflow.completed_at ? 'Completed' : 'In Progress'}
+              {workflow.completed_at ? "Completed" : "In Progress"}
             </p>
           </CardContent>
         </Card>
@@ -68,7 +86,7 @@ export function WorkflowDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {workflow.duration ? formatDuration(workflow.duration) : '-'}
+              {workflow.duration ? formatDuration(workflow.duration) : "-"}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Execution time</p>
           </CardContent>
@@ -79,7 +97,9 @@ export function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium">Events</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workflow.event_count || 0}</div>
+            <div className="text-2xl font-bold">
+              {workflow.event_count || 0}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Total events</p>
           </CardContent>
         </Card>
@@ -89,8 +109,12 @@ export function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium">Version</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workflow.version || 'N/A'}</div>
-            <p className="text-xs text-muted-foreground mt-1">Workflow version</p>
+            <div className="text-2xl font-bold">
+              {workflow.version || "N/A"}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Workflow version
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -104,7 +128,9 @@ export function WorkflowDetailPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium">Created At</p>
-              <p className="text-sm text-muted-foreground">{formatDate(workflow.created_at)}</p>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(workflow.created_at)}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {formatRelativeTime(workflow.created_at)}
               </p>
@@ -134,15 +160,21 @@ export function WorkflowDetailPage() {
             {workflow.module && (
               <div>
                 <p className="text-sm font-medium">Module</p>
-                <p className="text-sm text-muted-foreground font-mono">{workflow.module}</p>
+                <p className="text-sm text-muted-foreground font-mono">
+                  {workflow.module}
+                </p>
               </div>
             )}
           </div>
 
           {workflow.error_message && (
             <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm font-medium text-destructive">Error Message</p>
-              <p className="text-sm text-destructive/90 mt-1">{workflow.error_message}</p>
+              <p className="text-sm font-medium text-destructive">
+                Error Message
+              </p>
+              <p className="text-sm text-destructive/90 mt-1">
+                {workflow.error_message}
+              </p>
             </div>
           )}
         </CardContent>
@@ -152,10 +184,16 @@ export function WorkflowDetailPage() {
       <Tabs defaultValue="diagram" className="space-y-4">
         <TabsList>
           <TabsTrigger value="diagram">Diagram</TabsTrigger>
-          <TabsTrigger value="events">Events ({events?.data.length || 0})</TabsTrigger>
-          <TabsTrigger value="logs">Logs ({logs?.data.length || 0})</TabsTrigger>
+          <TabsTrigger value="events">
+            Events ({events?.data.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="logs">
+            Logs ({logs?.data.length || 0})
+          </TabsTrigger>
           <TabsTrigger value="input">Input Data</TabsTrigger>
-          {workflow.current_state && <TabsTrigger value="state">Current State</TabsTrigger>}
+          {workflow.current_state && (
+            <TabsTrigger value="state">Current State</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="diagram" className="space-y-4">
@@ -167,7 +205,7 @@ export function WorkflowDetailPage() {
               {diagramLoading ? (
                 <Skeleton className="h-96 w-full" />
               ) : diagram ? (
-                <MermaidDiagram content={diagram.content} metadata={diagram.metadata} />
+                <ReactFlowDiagram diagram={diagram} />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">
                   No diagram available
@@ -200,18 +238,23 @@ export function WorkflowDetailPage() {
                               {formatDate(event.created_at)}
                             </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">#{event.id}</div>
+                          <div className="text-xs text-muted-foreground">
+                            #{event.id}
+                          </div>
                         </div>
-                        {event.payload && Object.keys(event.payload).length > 0 && (
-                          <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
-                            {JSON.stringify(event.payload, null, 2)}
-                          </pre>
-                        )}
+                        {event.payload &&
+                          Object.keys(event.payload).length > 0 && (
+                            <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
+                              {JSON.stringify(event.payload, null, 2)}
+                            </pre>
+                          )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No events found</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No events found
+                  </p>
                 )}
               </ScrollArea>
             </CardContent>
@@ -245,7 +288,9 @@ export function WorkflowDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No logs found</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No logs found
+                  </p>
                 )}
               </ScrollArea>
             </CardContent>
@@ -290,72 +335,261 @@ export function WorkflowDetailPage() {
   );
 }
 
-function MermaidDiagram({ content, metadata }: { content: string; metadata: any }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [diagramId] = useState(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`);
-  const [renderError, setRenderError] = useState<string | null>(null);
+// Node type colors
+const nodeColors = {
+  step: "#3b82f6", // blue
+  activity: "#22c55e", // green
+  timer: "#eab308", // yellow
+  state: "#ef4444", // red
+};
 
-  useEffect(() => {
-    if (!content || !containerRef.current) return;
+// Edge type styles
+const edgeTypes = {
+  sequence: { stroke: "#6b7280", strokeWidth: 2 },
+  calls: { stroke: "#22c55e", strokeWidth: 2 },
+  reads: { stroke: "#ef4444", strokeWidth: 1.5, strokeDasharray: "5,5" },
+  writes: { stroke: "#ef4444", strokeWidth: 2 },
+  waits: { stroke: "#eab308", strokeWidth: 2 },
+};
 
-    let isMounted = true;
+function ReactFlowDiagram({ diagram }: { diagram: WorkflowDiagram }) {
+  // Format label for better readability
+  const formatLabel = (label: string, nodeType: string) => {
+    if (nodeType === "activity") {
+      // For activities: replace _ with space and capitalize
+      return label
+        .replace(/_/g, " ")
+        .split(" ")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" ");
+    } else if (nodeType === "state") {
+      // For state: remove "state." prefix, replace _ with space, and capitalize
+      const cleanLabel = label.replace(/^state\./, "");
+      return cleanLabel
+        .replace(/_/g, " ")
+        .split(" ")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" ");
+    } else if (nodeType === "step") {
+      // For steps: replace _ with space and capitalize
+      return label
+        .replace(/_/g, " ")
+        .split(" ")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" ");
+    }
+    return label;
+  };
 
-    const renderDiagram = async () => {
-      try {
-        setRenderError(null);
-        const mermaid = (await import('mermaid')).default;
-        
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: 'dark',
-          themeVariables: {
-            darkMode: true,
-            background: '#0a0a0a',
-            primaryColor: '#3b82f6',
-            primaryTextColor: '#e5e7eb',
-            primaryBorderColor: '#1f2937',
-            lineColor: '#6b7280',
-            secondaryColor: '#1f2937',
-            tertiaryColor: '#374151',
-            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-          },
-        });
+  // Convert API nodes to React Flow nodes with proper layout
+  const { nodes, edges } = useMemo(() => {
+    // Create a new directed graph for layout
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-        const { svg } = await mermaid.render(diagramId, content);
-        
-        if (isMounted && containerRef.current) {
-          containerRef.current.innerHTML = svg;
-        }
-      } catch (error) {
-        console.error('Failed to render Mermaid diagram:', error);
-        if (isMounted) {
-          setRenderError(error instanceof Error ? error.message : 'Unknown error');
-        }
+    // Configure layout direction (left to right for workflows)
+    dagreGraph.setGraph({
+      rankdir: "LR",
+      ranksep: 150,
+      nodesep: 100,
+      edgesep: 50,
+    });
+
+    // First pass: create nodes with proper sizing
+    const reactFlowNodes: Node[] = diagram.nodes.map((node) => {
+      // Calculate appropriate node size based on content
+      const labelLength = node.label.length;
+      const hasDescription = !!node.metadata?.description;
+
+      let width: number;
+      let height: number;
+
+      if (node.type === "activity") {
+        // For activity nodes, make them rectangles to fit text
+        width = Math.max(140, Math.min(labelLength * 7, 200));
+        height = 60;
+      } else if (node.type === "timer") {
+        width = 100;
+        height = 100;
+      } else if (node.type === "state") {
+        width = Math.max(120, Math.min(labelLength * 7, 180));
+        height = 60;
+      } else {
+        // Steps
+        width = Math.max(160, Math.min(labelLength * 8, 240));
+        height = hasDescription ? 90 : 70;
       }
-    };
 
-    renderDiagram();
+      // Add node to dagre graph for layout calculation
+      dagreGraph.setNode(node.id, { width, height });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [content, diagramId]);
+      return {
+        id: node.id,
+        type: "default",
+        position: { x: 0, y: 0 }, // Will be set by dagre
+        data: {
+          label: (
+            <div
+              className="text-center px-2"
+              style={{
+                maxWidth: `${width - 40}px`,
+                wordWrap: "break-word",
+                overflowWrap: "break-word",
+                hyphens: "auto",
+              }}
+            >
+              <div className="font-semibold text-xs leading-tight">
+                {formatLabel(node.label, node.type)}
+              </div>
+              {node.metadata?.description && (
+                <div className="text-[10px] text-muted-foreground mt-1 leading-tight line-clamp-2">
+                  {node.metadata.description}
+                </div>
+              )}
+            </div>
+          ),
+        },
+        style: {
+          background:
+            nodeColors[node.type as keyof typeof nodeColors] || "#6b7280",
+          color: "white",
+          border: "2px solid rgba(255, 255, 255, 0.3)",
+          borderRadius:
+            node.type === "activity"
+              ? "6px"
+              : node.type === "timer"
+                ? "4px"
+                : node.type === "state"
+                  ? "8px"
+                  : "6px",
+          padding: node.type === "activity" ? "12px" : "12px",
+          width: `${width}px`,
+          height: `${height}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "12px",
+        },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+      };
+    });
+
+    // Add edges to dagre graph
+    diagram.edges.forEach((edge) => {
+      dagreGraph.setEdge(edge.from, edge.to);
+    });
+
+    // Run layout algorithm
+    dagre.layout(dagreGraph);
+
+    // Update node positions from dagre layout
+    reactFlowNodes.forEach((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      node.position = {
+        x: nodeWithPosition.x - nodeWithPosition.width / 2,
+        y: nodeWithPosition.y - nodeWithPosition.height / 2,
+      };
+    });
+
+    // Create edges with proper styling
+    const reactFlowEdges: Edge[] = diagram.edges.map((edge, index) => {
+      const edgeStyle = edgeTypes[edge.type as keyof typeof edgeTypes] || {
+        stroke: "#6b7280",
+        strokeWidth: 1,
+      };
+
+      return {
+        id: `edge-${index}`,
+        source: edge.from,
+        target: edge.to,
+        label: edge.label,
+        type: "smoothstep",
+        animated: edge.type === "sequence",
+        style: edgeStyle,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: edgeStyle.stroke,
+        },
+        labelStyle: {
+          fill: "#e5e7eb",
+          fontSize: 10,
+        },
+        labelBgStyle: {
+          fill: "#0a0a0a",
+          fillOpacity: 0.8,
+        },
+      };
+    });
+
+    return { nodes: reactFlowNodes, edges: reactFlowEdges };
+  }, [diagram]);
 
   return (
     <div className="space-y-4">
-      {metadata && (
+      {diagram.metadata && (
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>Nodes: {metadata.node_count}</span>
-          <span>Edges: {metadata.edge_count}</span>
-          {metadata.workflow_version && <span>Version: {metadata.workflow_version}</span>}
+          <span>Nodes: {diagram.nodes.length}</span>
+          <span>Edges: {diagram.edges.length}</span>
+          {diagram.metadata.workflow_version && (
+            <span>Version: {diagram.metadata.workflow_version}</span>
+          )}
+          {diagram.metadata.workflow_description && (
+            <span>{diagram.metadata.workflow_description}</span>
+          )}
         </div>
       )}
-      <div ref={containerRef} className="flex justify-center items-center min-h-96 bg-muted/30 rounded-lg p-4">
-        {renderError && (
-          <div className="text-destructive text-sm p-4">
-            Failed to render diagram: {renderError}
-          </div>
-        )}
+
+      {/* Legend */}
+      <div className="flex gap-4 text-xs items-center flex-wrap">
+        <span className="font-medium">Legend:</span>
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-4 h-4 rounded"
+            style={{ background: nodeColors.step }}
+          />
+          <span>Step</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-4 h-4 rounded"
+            style={{ background: nodeColors.activity }}
+          />
+          <span>Activity</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4" style={{ background: nodeColors.timer }} />
+          <span>Timer</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-4 h-4 rounded"
+            style={{ background: nodeColors.state }}
+          />
+          <span>State</span>
+        </div>
+      </div>
+
+      <div className="h-[600px] w-full border rounded-lg bg-background">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          fitView
+          attributionPosition="bottom-left"
+          minZoom={0.1}
+          maxZoom={2}
+          defaultEdgeOptions={{
+            type: "smoothstep",
+          }}
+        >
+          <Background />
+        </ReactFlow>
       </div>
     </div>
   );

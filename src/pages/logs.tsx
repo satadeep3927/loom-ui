@@ -1,33 +1,33 @@
-import { useState } from 'react';
-import { useLogs } from '@/lib/queries';
-import { LogLevel } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogLevelBadge } from '@/components/status-badge';
-import { formatDate } from '@/lib/format';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { useLogs } from "@/lib/queries";
+import { LogLevel } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogLevelBadge } from "@/components/status-badge";
+import { formatDate } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function LogsPage() {
   const [page, setPage] = useState(1);
-  const [level, setLevel] = useState<LogLevel | 'ALL'>('ALL');
+  const [level, setLevel] = useState<LogLevel | "ALL">("ALL");
   const perPage = 50;
 
   const { data, isLoading } = useLogs({
     page,
     per_page: perPage,
-    level: level === 'ALL' ? undefined : level,
-    sort_by: 'created_at',
-    sort_order: 'desc',
+    level: level === "ALL" ? undefined : level,
+    sort_by: "created_at",
+    sort_order: "desc",
   });
 
   return (
@@ -37,7 +37,10 @@ export function LogsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Logs</h1>
           <p className="text-muted-foreground">System-wide log monitoring</p>
         </div>
-        <Select value={level} onValueChange={(value) => setLevel(value as LogLevel | 'ALL')}>
+        <Select
+          value={level}
+          onValueChange={(value) => setLevel(value as LogLevel | "ALL")}
+        >
           <SelectTrigger className="w-45">
             <SelectValue placeholder="Filter by level" />
           </SelectTrigger>
@@ -54,7 +57,8 @@ export function LogsPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {data?.meta.total || 0} Log Entr{data?.meta.total !== 1 ? 'ies' : 'y'}
+            {data?.meta.total || 0} Log Entr
+            {data?.meta.total !== 1 ? "ies" : "y"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -87,7 +91,9 @@ export function LogsPage() {
                               {formatDate(log.created_at)}
                             </span>
                           </div>
-                          <p className="text-sm wrap-break-word">{log.message}</p>
+                          <p className="text-sm wrap-break-word">
+                            {log.message}
+                          </p>
                           {log.extra && Object.keys(log.extra).length > 0 && (
                             <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
                               {JSON.stringify(log.extra, null, 2)}
@@ -103,7 +109,8 @@ export function LogsPage() {
               {data.meta.pages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Page {data.meta.page} of {data.meta.pages} ({data.meta.total} total)
+                    Page {data.meta.page} of {data.meta.pages} (
+                    {data.meta.total} total)
                   </div>
                   <div className="flex gap-2">
                     <Button

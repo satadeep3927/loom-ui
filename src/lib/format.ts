@@ -1,9 +1,9 @@
-import { formatDistanceToNow, format, parseISO } from 'date-fns';
+import { formatDistanceToNow, format, parseISO } from "date-fns";
 
 const parseDate = (date: string | Date): Date => {
-  if (typeof date === 'string') {
+  if (typeof date === "string") {
     // If the date is in UTC format without 'Z', append it
-    const dateStr = date.endsWith('Z') ? date : `${date}Z`;
+    const dateStr = date.endsWith("Z") ? date : `${date}Z`;
     return parseISO(dateStr);
   }
   return date;
@@ -11,7 +11,7 @@ const parseDate = (date: string | Date): Date => {
 
 export const formatDate = (date: string | Date) => {
   const dateObj = parseDate(date);
-  return format(dateObj, 'MMM dd, yyyy HH:mm:ss');
+  return format(dateObj, "MMM dd, yyyy HH:mm:ss");
 };
 
 export const formatRelativeTime = (date: string | Date) => {

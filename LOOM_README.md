@@ -29,18 +29,21 @@ A beautiful, modern web UI for monitoring and managing your LOOM workflow orches
 ## 📦 Installation
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Configure environment variables:**
-   
+
    Create a `.env` file in the root directory:
+
    ```env
    VITE_API_URL=http://localhost:8000
    ```
 
 3. **Start the development server:**
+
    ```bash
    npm run dev
    ```
@@ -88,6 +91,7 @@ src/
 The dashboard connects to the LOOM API backend. Make sure your LOOM server is running on the configured API URL (default: `http://localhost:8000`).
 
 The API client automatically handles:
+
 - Request/response formatting
 - Error handling
 - Type validation with Zod schemas
@@ -114,11 +118,13 @@ npx shadcn@latest add <component-name>
 ## 📊 Features Overview
 
 ### Dashboard
+
 - System overview with key metrics
 - Recent workflows and logs
 - Quick access to critical information
 
 ### Workflows
+
 - List all workflows with filtering
 - Sort by status, date, or name
 - View detailed workflow information
@@ -126,24 +132,28 @@ npx shadcn@latest add <component-name>
 - Input/output data inspection
 
 ### Tasks
+
 - Monitor task execution
 - Filter by status and workflow
 - Track retry attempts
 - View task details
 
 ### Events
+
 - Event sourcing audit trail
 - Filter by event type
 - View event payloads
 - Real-time event monitoring
 
 ### Logs
+
 - System-wide log aggregation
 - Filter by log level
 - Search and pagination
 - Error tracking
 
 ### Statistics
+
 - Workflow success rates
 - Task queue metrics
 - System health indicators

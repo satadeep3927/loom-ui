@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useWorkflows } from '@/lib/queries';
-import { WorkflowStatus } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from "react";
+import { useWorkflows } from "@/lib/queries";
+import { WorkflowStatus } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -9,32 +9,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { StatusBadge } from '@/components/status-badge';
-import { formatDate, formatRelativeTime } from '@/lib/format';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+} from "@/components/ui/table";
+import { StatusBadge } from "@/components/status-badge";
+import { formatDate, formatRelativeTime } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 export function WorkflowsPage() {
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<WorkflowStatus | 'ALL'>('ALL');
+  const [status, setStatus] = useState<WorkflowStatus | "ALL">("ALL");
   const perPage = 20;
 
   const { data, isLoading } = useWorkflows({
     page,
     per_page: perPage,
-    status: status === 'ALL' ? undefined : status,
-    sort_by: 'created_at',
-    sort_order: 'desc',
+    status: status === "ALL" ? undefined : status,
+    sort_by: "created_at",
+    sort_order: "desc",
   });
 
   return (
@@ -42,9 +42,14 @@ export function WorkflowsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Workflows</h1>
-          <p className="text-muted-foreground">Monitor and manage workflow executions</p>
+          <p className="text-muted-foreground">
+            Monitor and manage workflow executions
+          </p>
         </div>
-        <Select value={status} onValueChange={(value) => setStatus(value as WorkflowStatus | 'ALL')}>
+        <Select
+          value={status}
+          onValueChange={(value) => setStatus(value as WorkflowStatus | "ALL")}
+        >
           <SelectTrigger className="w-45">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -61,7 +66,7 @@ export function WorkflowsPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {data?.meta.total || 0} Workflow{data?.meta.total !== 1 ? 's' : ''}
+            {data?.meta.total || 0} Workflow{data?.meta.total !== 1 ? "s" : ""}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -85,7 +90,10 @@ export function WorkflowsPage() {
                 </TableHeader>
                 <TableBody>
                   {data.data.map((workflow) => (
-                    <TableRow key={workflow.id} className="cursor-pointer hover:bg-accent/50">
+                    <TableRow
+                      key={workflow.id}
+                      className="cursor-pointer hover:bg-accent/50"
+                    >
                       <TableCell>
                         <Link
                           to={`/workflows/${workflow.id}`}
@@ -94,14 +102,18 @@ export function WorkflowsPage() {
                           {workflow.name}
                         </Link>
                         {workflow.version && (
-                          <div className="text-xs text-muted-foreground">v{workflow.version}</div>
+                          <div className="text-xs text-muted-foreground">
+                            v{workflow.version}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={workflow.status} />
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">{formatDate(workflow.created_at)}</div>
+                        <div className="text-sm">
+                          {formatDate(workflow.created_at)}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {formatRelativeTime(workflow.created_at)}
                         </div>
@@ -109,7 +121,9 @@ export function WorkflowsPage() {
                       <TableCell>
                         {workflow.updated_at ? (
                           <>
-                            <div className="text-sm">{formatDate(workflow.updated_at)}</div>
+                            <div className="text-sm">
+                              {formatDate(workflow.updated_at)}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {formatRelativeTime(workflow.updated_at)}
                             </div>
@@ -130,7 +144,8 @@ export function WorkflowsPage() {
               {data.meta.pages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Page {data.meta.page} of {data.meta.pages} ({data.meta.total} total)
+                    Page {data.meta.page} of {data.meta.pages} (
+                    {data.meta.total} total)
                   </div>
                   <div className="flex gap-2">
                     <Button

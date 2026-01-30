@@ -1,7 +1,14 @@
-import { useSystemStats } from '@/lib/queries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, CheckCircle2, XCircle, Clock, Loader2, Ban } from 'lucide-react';
+import { useSystemStats } from "@/lib/queries";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Loader2,
+  Ban,
+} from "lucide-react";
 
 export function StatsPage() {
   const { data: stats, isLoading } = useSystemStats();
@@ -26,14 +33,18 @@ export function StatsPage() {
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Statistics</h1>
-        <p className="text-muted-foreground">System metrics and performance data</p>
+        <p className="text-muted-foreground">
+          System metrics and performance data
+        </p>
       </div>
 
       {/* Overall Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Workflows
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{stats.workflows.total}</div>
@@ -81,14 +92,17 @@ export function StatsPage() {
                 <span className="font-medium">Running</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.workflows.running}</span>
+                <span className="text-2xl font-bold">
+                  {stats.workflows.running}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-blue-500 h-2 rounded-full"
                     style={{
                       width: `${
                         stats.workflows.total
-                          ? (stats.workflows.running / stats.workflows.total) * 100
+                          ? (stats.workflows.running / stats.workflows.total) *
+                            100
                           : 0
                       }%`,
                     }}
@@ -103,14 +117,18 @@ export function StatsPage() {
                 <span className="font-medium">Completed</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.workflows.completed}</span>
+                <span className="text-2xl font-bold">
+                  {stats.workflows.completed}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-green-500 h-2 rounded-full"
                     style={{
                       width: `${
                         stats.workflows.total
-                          ? (stats.workflows.completed / stats.workflows.total) * 100
+                          ? (stats.workflows.completed /
+                              stats.workflows.total) *
+                            100
                           : 0
                       }%`,
                     }}
@@ -125,14 +143,17 @@ export function StatsPage() {
                 <span className="font-medium">Failed</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.workflows.failed}</span>
+                <span className="text-2xl font-bold">
+                  {stats.workflows.failed}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-red-500 h-2 rounded-full"
                     style={{
                       width: `${
                         stats.workflows.total
-                          ? (stats.workflows.failed / stats.workflows.total) * 100
+                          ? (stats.workflows.failed / stats.workflows.total) *
+                            100
                           : 0
                       }%`,
                     }}
@@ -147,14 +168,17 @@ export function StatsPage() {
                 <span className="font-medium">Canceled</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.workflows.canceled}</span>
+                <span className="text-2xl font-bold">
+                  {stats.workflows.canceled}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-gray-500 h-2 rounded-full"
                     style={{
                       width: `${
                         stats.workflows.total
-                          ? (stats.workflows.canceled / stats.workflows.total) * 100
+                          ? (stats.workflows.canceled / stats.workflows.total) *
+                            100
                           : 0
                       }%`,
                     }}
@@ -166,7 +190,9 @@ export function StatsPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Success Rate</span>
-                <span className="text-2xl font-bold text-green-500">{workflowSuccessRate}%</span>
+                <span className="text-2xl font-bold text-green-500">
+                  {workflowSuccessRate}%
+                </span>
               </div>
             </div>
           </div>
@@ -186,13 +212,17 @@ export function StatsPage() {
                 <span className="font-medium">Pending</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.tasks.pending}</span>
+                <span className="text-2xl font-bold">
+                  {stats.tasks.pending}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-yellow-500 h-2 rounded-full"
                     style={{
                       width: `${
-                        stats.tasks.total ? (stats.tasks.pending / stats.tasks.total) * 100 : 0
+                        stats.tasks.total
+                          ? (stats.tasks.pending / stats.tasks.total) * 100
+                          : 0
                       }%`,
                     }}
                   />
@@ -206,13 +236,17 @@ export function StatsPage() {
                 <span className="font-medium">Running</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.tasks.running}</span>
+                <span className="text-2xl font-bold">
+                  {stats.tasks.running}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-blue-500 h-2 rounded-full"
                     style={{
                       width: `${
-                        stats.tasks.total ? (stats.tasks.running / stats.tasks.total) * 100 : 0
+                        stats.tasks.total
+                          ? (stats.tasks.running / stats.tasks.total) * 100
+                          : 0
                       }%`,
                     }}
                   />
@@ -226,13 +260,17 @@ export function StatsPage() {
                 <span className="font-medium">Completed</span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{stats.tasks.completed}</span>
+                <span className="text-2xl font-bold">
+                  {stats.tasks.completed}
+                </span>
                 <div className="w-32 bg-secondary rounded-full h-2">
                   <div
                     className="bg-green-500 h-2 rounded-full"
                     style={{
                       width: `${
-                        stats.tasks.total ? (stats.tasks.completed / stats.tasks.total) * 100 : 0
+                        stats.tasks.total
+                          ? (stats.tasks.completed / stats.tasks.total) * 100
+                          : 0
                       }%`,
                     }}
                   />
@@ -252,7 +290,9 @@ export function StatsPage() {
                     className="bg-red-500 h-2 rounded-full"
                     style={{
                       width: `${
-                        stats.tasks.total ? (stats.tasks.failed / stats.tasks.total) * 100 : 0
+                        stats.tasks.total
+                          ? (stats.tasks.failed / stats.tasks.total) * 100
+                          : 0
                       }%`,
                     }}
                   />
@@ -263,7 +303,9 @@ export function StatsPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Success Rate</span>
-                <span className="text-2xl font-bold text-green-500">{taskSuccessRate}%</span>
+                <span className="text-2xl font-bold text-green-500">
+                  {taskSuccessRate}%
+                </span>
               </div>
             </div>
           </div>

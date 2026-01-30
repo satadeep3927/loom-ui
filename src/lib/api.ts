@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 import type {
   WorkflowSummary,
   WorkflowDetail,
@@ -14,7 +14,8 @@ import type {
   TaskStatus,
   LogLevel,
   EventType,
-} from './types';
+  WorkflowDiagram,
+} from "./types";
 
 // Query Parameters
 export interface PaginationParams {
@@ -24,7 +25,7 @@ export interface PaginationParams {
 
 export interface SortParams {
   sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sort_order?: "asc" | "desc";
 }
 
 export interface WorkflowListParams extends PaginationParams, SortParams {
@@ -53,21 +54,26 @@ export interface LogListParams extends PaginationParams, SortParams {
 // Workflows
 export const workflowsApi = {
   list: async (params?: WorkflowListParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<WorkflowSummary>>('/api/workflows/', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<WorkflowSummary>>(
+      "/api/workflows/",
+      {
+        params,
+      },
+    );
     return data;
   },
 
   get: async (workflowId: string) => {
-    const { data } = await apiClient.get<WorkflowDetail>(`/api/workflows/${workflowId}`);
+    const { data } = await apiClient.get<WorkflowDetail>(
+      `/api/workflows/${workflowId}`,
+    );
     return data;
   },
 
   getEvents: async (workflowId: string, params?: EventListParams) => {
     const { data } = await apiClient.get<PaginatedResponse<EventDetail>>(
       `/api/workflows/${workflowId}/events`,
-      { params }
+      { params },
     );
     return data;
   },
@@ -75,13 +81,15 @@ export const workflowsApi = {
   getLogs: async (workflowId: string, params?: LogListParams) => {
     const { data } = await apiClient.get<PaginatedResponse<LogEntry>>(
       `/api/workflows/${workflowId}/logs`,
-      { params }
+      { params },
     );
     return data;
   },
 
   getDiagram: async (workflowId: string) => {
-    const { data } = await apiClient.get(`/api/graphs/workflow/${workflowId}/definition/render`);
+    const { data } = await apiClient.get<WorkflowDiagram>(
+      `/api/graphs/workflow/${workflowId}/definition`,
+    );
     return data;
   },
 };
@@ -89,9 +97,12 @@ export const workflowsApi = {
 // Tasks
 export const tasksApi = {
   list: async (params?: TaskListParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskSummary>>('/api/tasks/', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<TaskSummary>>(
+      "/api/tasks/",
+      {
+        params,
+      },
+    );
     return data;
   },
 
@@ -101,9 +112,12 @@ export const tasksApi = {
   },
 
   listPending: async (params?: PaginationParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskSummary>>('/api/tasks/pending', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<TaskSummary>>(
+      "/api/tasks/pending",
+      {
+        params,
+      },
+    );
     return data;
   },
 };
@@ -111,9 +125,12 @@ export const tasksApi = {
 // Events
 export const eventsApi = {
   list: async (params?: EventListParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<EventDetail>>('/api/events/', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<EventDetail>>(
+      "/api/events/",
+      {
+        params,
+      },
+    );
     return data;
   },
 
@@ -126,23 +143,32 @@ export const eventsApi = {
 // Logs
 export const logsApi = {
   list: async (params?: LogListParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<LogEntry>>('/api/logs/', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<LogEntry>>(
+      "/api/logs/",
+      {
+        params,
+      },
+    );
     return data;
   },
 
   listErrors: async (params?: LogListParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<LogEntry>>('/api/logs/errors', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<LogEntry>>(
+      "/api/logs/errors",
+      {
+        params,
+      },
+    );
     return data;
   },
 
   listRecent: async (params?: PaginationParams) => {
-    const { data } = await apiClient.get<PaginatedResponse<LogEntry>>('/api/logs/recent', {
-      params,
-    });
+    const { data } = await apiClient.get<PaginatedResponse<LogEntry>>(
+      "/api/logs/recent",
+      {
+        params,
+      },
+    );
     return data;
   },
 };
@@ -150,17 +176,17 @@ export const logsApi = {
 // Statistics
 export const statsApi = {
   getSystem: async () => {
-    const { data } = await apiClient.get<SystemStats>('/api/stats/');
+    const { data } = await apiClient.get<SystemStats>("/api/stats/");
     return data;
   },
 
   getWorkflows: async () => {
-    const { data } = await apiClient.get<WorkflowStats>('/api/stats/workflows');
+    const { data } = await apiClient.get<WorkflowStats>("/api/stats/workflows");
     return data;
   },
 
   getTasks: async () => {
-    const { data } = await apiClient.get<TaskStats>('/api/stats/tasks');
+    const { data } = await apiClient.get<TaskStats>("/api/stats/tasks");
     return data;
   },
 };
