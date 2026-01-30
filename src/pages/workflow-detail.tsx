@@ -15,19 +15,17 @@ import {
 import type { WorkflowDiagram } from "@/lib/types";
 import {
   Background,
-  Controls,
   Edge,
   MarkerType,
-  MiniMap,
   Node,
   Position,
-  ReactFlow,
+  ReactFlow
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import dagre from "dagre";
 import { ChevronLeft } from "lucide-react";
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import dagre from "dagre";
 
 export function WorkflowDetailPage() {
   const { id } = useParams<{ id: string }>();
