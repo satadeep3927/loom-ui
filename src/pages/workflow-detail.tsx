@@ -19,7 +19,7 @@ import {
   MarkerType,
   Node,
   Position,
-  ReactFlow
+  ReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import dagre from "dagre";

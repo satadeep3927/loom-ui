@@ -9,6 +9,8 @@ import {
   BarChart3,
 } from "lucide-react";
 
+import Logo from "@/assets/logo-white.png";
+
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Workflows", href: "/workflows", icon: Workflow },
@@ -24,7 +26,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card">
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold">LOOM Monitor</h1>
+        <img src={Logo} alt="LOOM Monitor Logo" className="w-25" />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navigation.map((item) => {
